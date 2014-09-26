@@ -26,7 +26,9 @@ import shutil
 import string
 from subliminal import Video, download_best_subtitles
 import sys
+import tempfile
 from tpb import TPB
+import zipfile
 
 from themylog.client import Retriever, setup_logging_handler
 from themylog.collector.timeline import Timeline
@@ -94,10 +96,31 @@ def notabenoid(args):
                             return True
 
 
+def sp_fan(args):
+    if args["show"] == "South Park":
+        try:
+            content = requests.get("http://www.sp-fan.ru/episode/sub/download/%02d%02d.zip" % (args["season"],
+                                                                                               args["episode"]))
+            if content.status_code != 200:
+                raise Exception("status_code = %d" % content.status_code)
+
+            content = content.content
+        except:
+            return
+
+        fh, path = tempfile.mkstemp()
+        with open(path, "w") as f:
+            f.write(content)
+        z = zipfile.ZipFile(path)
+        open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read("%02d%02d.srt" % (args["season"],
+                                                                                                 args["episode"])))
+        os.unlink(path)
+
+
 tpb = TPB("http://thepiratebay.se")
 qualities = ("1080p", "720p", "")
 video_extensions = (".avi", ".mkv", ".mp4", ".wmv")
-subtitle_providers = {"subliminal": _subliminal, "notabenoid": notabenoid}
+subtitle_providers = {"subliminal": _subliminal, "notabenoid": notabenoid, "sp_fan": sp_fan}
 
 torrent_file_seeker = Timeline("torrent_file_seeker")
 torrent_downloader = Timeline("torrent_downloader")
