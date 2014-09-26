@@ -115,11 +115,12 @@ def sp_fan(args):
         open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read("%02d%02d.srt" % (args["season"],
                                                                                                  args["episode"])))
         os.unlink(path)
+        return True
 
 
 tpb = TPB("http://thepiratebay.se")
 qualities = ("1080p", "720p", "")
-video_extensions = (".avi", ".mkv", ".mp4", ".wmv")
+video_extensions = (".avi", ".mkv", ".mp4")
 subtitle_providers = {"subliminal": _subliminal, "notabenoid": notabenoid, "sp_fan": sp_fan}
 
 torrent_file_seeker = Timeline("torrent_file_seeker")
@@ -164,6 +165,13 @@ for show, config in shows.iteritems():
 
             if not any(torrent_file_seeker.contains(title_for_quality(test_quality)) for test_quality in qualities
                        if qualities.index(test_quality) <= qualities.index(quality)):
+                try:
+                    if not any(file.lower().endswith(video_extensions) for file in torrent.files.keys()):
+                        continue
+                except lxml.etree.XMLSyntaxError:
+                    logging.getLogger("tpb").exception("Unable to load files")
+                    continue
+
                 tmp_dst = os.path.join(tmp, "".join(random.choice(string.ascii_letters + string.digits)
                                                     for _ in range(32)))
                 os.mkdir(tmp_dst)
