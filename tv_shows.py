@@ -8,6 +8,7 @@ shows = {
     "The Big Bang Theory": {"tpb": True, "season": 8},
     "South Park": {"tpb": True, "season": 18},
     "Modern Family": {"tpb": True, "season": 6},
+    "Family Guy": {"tpb": True, "season": 13},
 }
 
 import babelfish
@@ -255,10 +256,10 @@ for downloaded in Retriever().retrieve(
                 continue
 
             if data:
-                subtitle_downloader.store(downloaded.msg, {"show": downloading.args["show"],
-                                                           "season": downloading.args["season"],
-                                                           "episode": downloading.args["episode"],
-                                                           "quality": downloading.args["quality"],
+                subtitle_downloader.store(downloaded.msg, {"show": downloaded.args["show"],
+                                                           "season": downloaded.args["season"],
+                                                           "episode": downloaded.args["episode"],
+                                                           "quality": downloaded.args["quality"],
                                                            "data": data},
                                           explanation="Скачаны субтитры %s к %s" % (
                                               name, make_title(downloaded.args["show"],
