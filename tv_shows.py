@@ -86,15 +86,17 @@ def notabenoid(args):
                 re.search("(сезон|season) 0?%d" % args["season"], unicode(a).lower())):
                 page = BeautifulSoup(requests.get("http://notabenoid.com" + a.attrs["href"]).text)
                 for tr in page.select("#Chapters tbody tr"):
-                    t = tr.select(".t")[0]
-                    if re.search("(e|x)%02d" % args["episode"], unicode(t).lower()):
-                        if float(tr.select(".r")[0].get_text().strip().split(" ")[0].replace("%", "")) >= 95:
-                            link = "http://notabenoid.com" + tr.select(".act")[0].attrs["href"]
-                            link = link.replace("/ready",
-                                                "/download?algorithm=0&skip_neg=0&author_id=0&format=s&enc=UTF-8&crlf=0")
-                            response = requests.get(link).text.encode("utf-8")
-                            open(os.path.splitext(args["path"])[0] + ".ru.srt", "w").write(response)
-                            return True
+                    t = tr.select(".t")
+                    r = tr.select(".r")
+                    if t and r:
+                        if re.search("(e|x)%02d" % args["episode"], unicode(t[0]).lower()):
+                            if float(r[0].get_text().strip().split(" ")[0].replace("%", "")) >= 95:
+                                link = "http://notabenoid.com" + tr.select(".act")[0].attrs["href"]
+                                link = link.replace("/ready",
+                                                    "/download?algorithm=0&skip_neg=0&author_id=0&format=s&enc=UTF-8&crlf=0")
+                                response = requests.get(link).text.encode("utf-8")
+                                open(os.path.splitext(args["path"])[0] + ".ru.srt", "w").write(response)
+                                return True
 
 
 def sp_fan(args):
