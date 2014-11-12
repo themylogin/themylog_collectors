@@ -46,6 +46,7 @@ import zipfile
 
 from themylog.client import Retriever, setup_logging_handler
 from themylog.collector.timeline import Timeline
+from themyutils.string import common_prefix, common_suffix
 
 setup_logging_handler("%s.collector" % sys.argv[1])
 
@@ -289,9 +290,18 @@ for show, config in shows.iteritems():
         for url, quality in tracker["urls"].items():
             location = make_torrent_location(show, season, quality, url)
             if location in torrents:
-                video_files = find_video_files(location)
-                for video_file in video_files.keys():
-                    episode = os.path.basename(video_file)
+                video_files = find_video_files(location).keys()
+                prefix = common_prefix(video_files)
+                suffix = common_suffix(video_files)
+                for video_file in video_files:
+                    if len(video_files) == 1:
+                        episode = 1
+                    else:
+                        episode = video_file.replace(prefix, "").replace(suffix, "")
+                        try:
+                            episode = int(episode)
+                        except ValueError:
+                            pass
                     msg = "%s %s" % (make_torrent_title(show, season, quality, url), episode)
                     downloaded = Retriever().retrieve(
                         (operator.and_,
