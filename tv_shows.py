@@ -4,11 +4,21 @@
 # timeout = 180
 from __future__ import absolute_import, division, unicode_literals
 
+NNM_CLUB_HEADERS = {"Cookie": "phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"}
+
 shows = {
     "The Big Bang Theory": {"tpb": True, "season": 8},
     "South Park": {"tpb": True, "season": 18},
     "Modern Family": {"tpb": True, "season": 6},
     "Family Guy": {"tpb": True, "season": 13},
+    "Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
+                                    "http://nnm-club.me/forum/download.php?id=723513": "HDTV",
+                                    # http://nnm-club.me/forum/viewtopic.php?t=839949
+                                    "http://nnm-club.me/forum/download.php?id=723484": "720p",
+                                    # http://nnm-club.me/forum/viewtopic.php?t=839819
+                                    "http://nnm-club.me/forum/download.php?id=723387": "HDTV"},
+                           "headers": NNM_CLUB_HEADERS},
+               "season": 2}
 }
 
 import babelfish
