@@ -4,7 +4,7 @@
 # timeout = 180
 from __future__ import absolute_import, division, unicode_literals
 
-NNM_CLUB_HEADERS = {"Cookie": "phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"}
+NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"
 
 shows = {
     "The Big Bang Theory": {"tpb": True, "season": 8},
@@ -12,19 +12,22 @@ shows = {
     "Modern Family": {"tpb": True, "season": 6},
     "Family Guy": {"tpb": True, "season": 13},
     "Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
-                                    "http://nnm-club.me/forum/download.php?id=723513": "HDTV",
+                                    "http://nnm-club.me/forum/download.php?id=723513": "",
                                     # http://nnm-club.me/forum/viewtopic.php?t=839949
                                     "http://nnm-club.me/forum/download.php?id=723484": "720p",
                                     # http://nnm-club.me/forum/viewtopic.php?t=839819
-                                    "http://nnm-club.me/forum/download.php?id=723387": "HDTV"},
-                           "headers": NNM_CLUB_HEADERS},
+                                    "http://nnm-club.me/forum/download.php?id=723387": ""},
+                           "cookies": NNM_CLUB_COOKIES},
                "season": 2}
 }
 
 import babelfish
+import base64
 from bs4 import BeautifulSoup
+import Cookie
 from datetime import datetime, timedelta
 import functools
+import hashlib
 import json
 import logging
 import lxml
@@ -149,6 +152,24 @@ def make_title(show, season, episode, quality):
     return " ".join(filter(None, [show, "S%02dE%02d" % (season, episode), quality]))
 
 
+def make_torrent_location(show, season, quality, url):
+    return os.path.join(downloads, make_torrent_title(show, season, quality, url))
+
+
+def make_torrent_title(show, season, quality, url):
+    return " ".join(filter(None, [show, "S%02d" % season, quality, hashlib.md5(url).hexdigest()[:6]]))
+
+
+def find_video_files(dst):
+    video_files = {}
+    for root, dirs, files in os.walk(dst.encode("utf-8")):
+        for file in files:
+            if file.decode("utf-8").lower().endswith(video_extensions):
+                path = os.path.join(root, file)
+                video_files[path.decode("utf-8")] = os.path.getsize(path)
+    return video_files
+
+
 for show, config in shows.iteritems():
     if config.get("tpb"):
         try:
@@ -201,6 +222,21 @@ for show, config in shows.iteritems():
                                            "tpb": torrent.__dict__},
                                           explanation="Начато скачивание %s" % title_for_quality(quality))
 
+    if config.get("tracker"):
+        tracker = config["tracker"]
+        season = config["season"]
+        for url, quality in tracker["urls"].items():
+            try:
+                r = requests.get(url,
+                                 cookies={k: v.value for k, v in Cookie.SimpleCookie(tracker["cookies"]).items()},
+                                 stream=True).raw.read()
+            except:
+                logging.getLogger("tracker").exception("Unable to download torrent")
+                continue
+
+            location = make_torrent_location(show, season, quality, url)
+            deluge.call("webapi.add_torrent", base64.b64encode(r), {"download_location": location})
+
 
 torrents = {torrent["save_path"]: torrent_id
             for torrent_id, torrent in deluge.call("webapi.get_torrents", None,
@@ -213,12 +249,7 @@ for downloading in Retriever().retrieve(
           (operator.eq, lambda k: k("logger"), torrent_file_seeker.logger),
           (operator.gt, lambda k: k("datetime"), datetime.now() - timedelta(days=1))))):
     if downloading.args["tmp_dst"] in torrents:
-        video_files = {}
-        for root, dirs, files in os.walk(downloading.args["tmp_dst"]):
-            for file in files:
-                if file.lower().endswith(video_extensions):
-                    path = os.path.join(root, file)
-                    video_files[path] = os.path.getsize(path)
+        video_files = find_video_files(downloading.args["tmp_dst"])
         if video_files:
             video_file = sorted(video_files.items(), key=lambda (path, size): -size)[0][0]
 
@@ -231,7 +262,7 @@ for downloading in Retriever().retrieve(
 
             if not os.path.exists(new_dir):
                 os.makedirs(new_dir)
-            os.rename(video_file, new_path)
+            os.rename(video_file.encode("utf-8"), new_path)
 
             deluge.call("webapi.remove_torrent", torrents[downloading.args["tmp_dst"]])
             shutil.rmtree(downloading.args["tmp_dst"])
@@ -250,6 +281,33 @@ for downloading in Retriever().retrieve(
                                                                                         downloading.args["season"],
                                                                                         downloading.args["episode"],
                                                                                         downloading.args["quality"]))
+
+for show, config in shows.iteritems():
+    if config.get("tracker"):
+        tracker = config["tracker"]
+        season = config["season"]
+        for url, quality in tracker["urls"].items():
+            location = make_torrent_location(show, season, quality, url)
+            if location in torrents:
+                video_files = find_video_files(location)
+                for video_file in video_files.keys():
+                    episode = os.path.basename(video_file)
+                    msg = "%s %s" % (make_torrent_title(show, season, quality, url), episode)
+                    downloaded = Retriever().retrieve(
+                        (operator.and_,
+                         (operator.eq, lambda k: k("application"), torrent_downloader.application),
+                         (operator.and_,
+                          (operator.eq, lambda k: k("logger"), torrent_downloader.logger),
+                          (operator.eq, lambda k: k("msg"), msg))))
+                    if not downloaded:
+                        torrent_downloader.store(msg,
+                                                 {"show": show,
+                                                  "season": season,
+                                                  "episode": episode,
+                                                  "quality": quality,
+                                                  "old_name": video_file,
+                                                  "path": video_file},
+                                                 explanation="Завершено скачивание %s" % msg)
 
 
 subtitle_downloaders = {name: Timeline("%s_subtitle_provider" % name) for name in subtitle_providers}
