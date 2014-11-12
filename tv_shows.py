@@ -115,8 +115,9 @@ def sp_fan(args):
         with open(path, "w") as f:
             f.write(content)
         z = zipfile.ZipFile(path)
-        open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read("%02d%02d.srt" % (args["season"],
-                                                                                                 args["episode"])))
+        for f in z.namelist():
+            if f.lower().endswith(".srt"):
+                open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read(f))
         os.unlink(path)
         return True
 
