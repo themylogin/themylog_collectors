@@ -91,28 +91,6 @@ def _subliminal(args):
         return True
 
 
-def notabenoid(args):
-    search = BeautifulSoup(requests.get("http://notabenoid.com/search", params={"t": str(args["show"])}).text)
-    for li in search.select(".search-results li"):
-        if "субтитры с английского на русский" in unicode(li):
-            a = li.select("p a")[0]
-            if (re.search("%d (сезон|season)" % args["season"], unicode(a).lower()) or
-                re.search("(сезон|season) 0?%d" % args["season"], unicode(a).lower())):
-                page = BeautifulSoup(requests.get("http://notabenoid.com" + a.attrs["href"]).text)
-                for tr in page.select("#Chapters tbody tr"):
-                    t = tr.select(".t")
-                    r = tr.select(".r")
-                    if t and r:
-                        if re.search("(e|x)%02d" % args["episode"], unicode(t[0]).lower()):
-                            if float(r[0].get_text().strip().split(" ")[0].replace("%", "")) >= 95:
-                                link = "http://notabenoid.com" + tr.select(".act")[0].attrs["href"]
-                                link = link.replace("/ready",
-                                                    "/download?algorithm=0&skip_neg=0&author_id=0&format=s&enc=UTF-8&crlf=0")
-                                response = requests.get(link).text.encode("utf-8")
-                                open(os.path.splitext(args["path"])[0] + ".ru.srt", "w").write(response)
-                                return True
-
-
 def sp_fan(args):
     if args["show"] == "South Park":
         try:
@@ -139,7 +117,7 @@ def sp_fan(args):
 tpb = TPB("http://thepiratebay.se")
 qualities = ("1080p", "720p", "")
 video_extensions = (".avi", ".mkv", ".mp4")
-subtitle_providers = {"subliminal": _subliminal, "notabenoid": notabenoid, "sp_fan": sp_fan}
+subtitle_providers = {"subliminal": _subliminal, "sp_fan": sp_fan}
 
 torrent_file_seeker = Timeline("torrent_file_seeker")
 torrent_downloader = Timeline("torrent_downloader")
@@ -248,7 +226,7 @@ for downloading in Retriever().retrieve(
          (operator.eq, lambda k: k("application"), torrent_file_seeker.application),
          (operator.and_,
           (operator.eq, lambda k: k("logger"), torrent_file_seeker.logger),
-          (operator.gt, lambda k: k("datetime"), datetime.now() - timedelta(days=1))))):
+          (operator.gt, lambda k: k("datetime"), datetime.now() - timedelta(days=7))))):
     if downloading.args["tmp_dst"] in torrents:
         video_files = find_video_files(downloading.args["tmp_dst"])
         if video_files:
