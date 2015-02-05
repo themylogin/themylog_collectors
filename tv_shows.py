@@ -11,14 +11,15 @@ shows = {
     "South Park": {"tpb": True, "season": 18},
     "Modern Family": {"tpb": True, "season": 6},
     "Family Guy": {"tpb": True, "season": 13},
-    "Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
-                                    "http://nnm-club.me/forum/download.php?id=723513": "",
-                                    # http://nnm-club.me/forum/viewtopic.php?t=839949
-                                    "http://nnm-club.me/forum/download.php?id=723484": "720p",
-                                    # http://nnm-club.me/forum/viewtopic.php?t=839819
-                                    "http://nnm-club.me/forum/download.php?id=723387": ""},
-                           "cookies": NNM_CLUB_COOKIES},
-               "season": 2}
+    "The Newsroom": {"tpb": True, "season": 1},
+    #"Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
+    #                                "http://nnm-club.me/forum/download.php?id=723513": "",
+    #                                # http://nnm-club.me/forum/viewtopic.php?t=839949
+    #                                "http://nnm-club.me/forum/download.php?id=723484": "720p",
+    #                                # http://nnm-club.me/forum/viewtopic.php?t=839819
+    #                                "http://nnm-club.me/forum/download.php?id=723387": ""},
+    #                       "cookies": NNM_CLUB_COOKIES},
+    #           "season": 2}
 }
 
 import babelfish
