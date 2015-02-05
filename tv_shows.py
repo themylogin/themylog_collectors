@@ -150,6 +150,7 @@ def find_video_files(dst):
     return video_files
 
 
+found_torrents = []
 for show, config in shows.iteritems():
     if config.get("tpb"):
         try:
@@ -189,9 +190,7 @@ for show, config in shows.iteritems():
 
                 tmp_dst = os.path.join(tmp, "".join(random.choice(string.ascii_letters + string.digits)
                                                     for _ in range(32)))
-                os.mkdir(tmp_dst)
-
-                deluge.call("webapi.add_torrent", torrent.magnet_link, {"download_location": tmp_dst})
+                found_torrents.append((torrent.magnet_link, tmp_dst))
 
                 torrent_file_seeker.store(title_for_quality(quality),
                                           {"show": show,
@@ -215,7 +214,13 @@ for show, config in shows.iteritems():
                 continue
 
             location = make_torrent_location(show, season, quality, url)
-            deluge.call("webapi.add_torrent", base64.b64encode(r), {"download_location": location})
+            found_torrents.append((base64.b64encode(r), location))
+
+for torrent, download_location in found_torrents:
+    if not os.path.exists(download_location):
+        os.mkdir(download_location)
+
+    deluge.call("webapi.add_torrent", torrent, {"download_location": download_location})
 
 
 torrents = {torrent["save_path"]: torrent_id
