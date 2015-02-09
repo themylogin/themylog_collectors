@@ -25,6 +25,7 @@ shows = {
 import babelfish
 import base64
 from bs4 import BeautifulSoup
+from collections import namedtuple
 import Cookie
 from datetime import datetime, timedelta
 import functools
@@ -83,20 +84,22 @@ class DelugeClient(object):
         return result["result"]
 
 
+Subtitle = namedtuple("Subtitle", ["id", "language", "score", "text"])
+
+
 def _subliminal(args):
-    subtitles = download_best_subtitles([Video.fromname(args["old_name"])],
-                                        {babelfish.Language.fromietf("en")}).values()[0]
+    video = Video.fromname(args["old_name"])
+    subtitles = download_best_subtitles([video], {babelfish.Language.fromietf("en")}).values()[0]
     for subtitle in subtitles:
-        open(os.path.splitext(args["path"])[0] + ".%s.srt" % subtitle.language, "w").write(subtitle.text.encode("utf-8"))
-    if subtitles:
-        return True
+        return Subtitle(id=subtitle.page_link, language=subtitle.language, score=subtitle.compute_score(video),
+                        text=subtitle.text)
 
 
 def sp_fan(args):
     if args["show"] == "South Park":
+        url = "http://www.sp-fan.ru/episode/sub/download/%02d%02d.zip" % (args["season"], args["episode"])
         try:
-            content = requests.get("http://www.sp-fan.ru/episode/sub/download/%02d%02d.zip" % (args["season"],
-                                                                                               args["episode"]))
+            content = requests.get(url)
             if content.status_code != 200:
                 raise Exception("status_code = %d" % content.status_code)
 
@@ -104,15 +107,16 @@ def sp_fan(args):
         except:
             return
 
+        subtitle = None
         fh, path = tempfile.mkstemp()
         with open(path, "w") as f:
             f.write(content)
         z = zipfile.ZipFile(path)
         for f in z.namelist():
             if f.lower().endswith(".srt"):
-                open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read(f))
+                subtitle = Subtitle(id=url, language="rus", score=100, test=z.read(f))
         os.unlink(path)
-        return True
+        return subtitle
 
 
 tpb = TPB("http://thepiratebay.se")
@@ -128,8 +132,9 @@ downloads = "/media/storage/Torrent/downloads"
 tmp = "/media/storage/Torrent/.tmp"
 
 
-def make_title(show, season, episode, quality):
-    return " ".join(filter(None, [show, "S%02dE%02d" % (season, episode), quality]))
+def make_title(show, season, episode, quality, release_group=None):
+    return " ".join(filter(None, [show, "S%02dE%02d" % (season, episode), quality,
+                                  "[%s]" % release_group if release_group else None]))
 
 
 def make_torrent_location(show, season, quality, url):
@@ -177,10 +182,11 @@ for show, config in shows.iteritems():
             else:
                 quality = ""
 
-            title_for_quality = functools.partial(make_title, show, season, episode)
+            release_group = Video.fromname(torrent.title).release_group
 
-            if not any(torrent_file_seeker.contains(title_for_quality(test_quality)) for test_quality in qualities
-                       if qualities.index(test_quality) <= qualities.index(quality)):
+            title = make_title(show, season, episode, quality, release_group)
+
+            if not torrent_file_seeker.contains(title):
                 try:
                     if not any(file.lower().endswith(video_extensions) for file in torrent.files.keys()):
                         continue
@@ -192,14 +198,15 @@ for show, config in shows.iteritems():
                                                     for _ in range(32)))
                 found_torrents.append((torrent.magnet_link, tmp_dst))
 
-                torrent_file_seeker.store(title_for_quality(quality),
+                torrent_file_seeker.store(title,
                                           {"show": show,
                                            "season": season,
                                            "episode": episode,
                                            "quality": quality,
+                                           "release_group": release_group,
                                            "tmp_dst": tmp_dst,
                                            "tpb": torrent.__dict__},
-                                          explanation="Начато скачивание %s" % title_for_quality(quality))
+                                          explanation="Начато скачивание %s" % title)
 
     if config.get("tracker"):
         tracker = config["tracker"]
@@ -238,11 +245,12 @@ for downloading in Retriever().retrieve(
         if video_files:
             video_file = sorted(video_files.items(), key=lambda (path, size): -size)[0][0]
 
-            new_dir = os.path.join(downloads, downloading.args["show"])
+            new_dir = os.path.join(downloads, downloading.args["show"], "all")
             new_name = make_title(downloading.args["show"],
                                   downloading.args["season"],
                                   downloading.args["episode"],
-                                  downloading.args["quality"]) + os.path.splitext(video_file)[1]
+                                  downloading.args["quality"],
+                                  downloading.args["release_group"]) + os.path.splitext(video_file)[1]
             new_path = os.path.join(new_dir, new_name)
 
             if not os.path.exists(new_dir):
@@ -255,17 +263,20 @@ for downloading in Retriever().retrieve(
             torrent_downloader.store(make_title(downloading.args["show"],
                                                 downloading.args["season"],
                                                 downloading.args["episode"],
-                                                downloading.args["quality"]),
+                                                downloading.args["quality"],
+                                                downloading.args["release_group"]),
                                      {"show": downloading.args["show"],
                                       "season": downloading.args["season"],
                                       "episode": downloading.args["episode"],
                                       "quality": downloading.args["quality"],
+                                      "release_group": downloading.args["release_group"],
                                       "old_name": os.path.split(video_file)[-1],
                                       "path": new_path},
                                      explanation="Завершено скачивание %s" % make_title(downloading.args["show"],
                                                                                         downloading.args["season"],
                                                                                         downloading.args["episode"],
-                                                                                        downloading.args["quality"]))
+                                                                                        downloading.args["quality"],
+                                                                                        downloading.args["release_group"]))
 
 for show, config in shows.iteritems():
     if config.get("tracker"):
@@ -299,12 +310,14 @@ for show, config in shows.iteritems():
                                                   "season": season,
                                                   "episode": episode,
                                                   "quality": quality,
+                                                  "release_group": None,
                                                   "old_name": video_file,
                                                   "path": video_file},
                                                  explanation="Завершено скачивание %s" % msg)
 
 
-subtitle_downloaders = {name: Timeline("%s_subtitle_provider" % name) for name in subtitle_providers}
+subtitle_downloaders = {name: Timeline("%s_subtitle_provider" % name)
+                        for name in subtitle_providers}
 for downloaded in Retriever().retrieve(
         (operator.and_,
          (operator.eq, lambda k: k("application"), torrent_downloader.application),
@@ -312,23 +325,26 @@ for downloaded in Retriever().retrieve(
           (operator.eq, lambda k: k("logger"), torrent_downloader.logger),
           (operator.gt, lambda k: k("datetime"), datetime.now() - timedelta(days=14))))):
     for name, provider in subtitle_providers.items():
-        subtitle_downloader = subtitle_downloaders[name]
-        if not subtitle_downloader.contains(downloaded.msg):
-            try:
-                data = provider(downloaded.args)
-            except:
-                logging.getLogger("subtitle_provider.%s" % name).exception("Unable to download subtitles")
-                continue
-
-            if data:
+        try:
+            subtitle = provider(downloaded.args)
+        except:
+            logging.getLogger("subtitle_provider.%s" % name).exception("Unable to download subtitles")
+        else:
+            if subtitle:
+                subtitle_downloader = subtitle_downloaders[name]
                 subtitle_downloader.store(downloaded.msg, {"show": downloaded.args["show"],
                                                            "season": downloaded.args["season"],
                                                            "episode": downloaded.args["episode"],
                                                            "quality": downloaded.args["quality"],
-                                                           "data": data},
-                                          explanation="Скачаны субтитры %s к %s" % (
-                                              name, make_title(downloaded.args["show"],
-                                                               downloaded.args["season"],
-                                                               downloaded.args["episode"],
-                                                               downloaded.args["quality"])
-                                          ))
+                                                           "release_group": downloaded.args["release_group"],
+                                                           "score": subtitle.score},
+                                              explanation="Скачаны субтитры %s к %s, рейтинг %d" % (
+                                                  name, make_title(downloaded.args["show"],
+                                                                   downloaded.args["season"],
+                                                                   downloaded.args["episode"],
+                                                                   downloaded.args["quality"],
+                                                                   downloaded.args["release_group"]),
+                                                  subtitle.score
+                                              ))
+                open(os.path.splitext(downloaded.args["path"])[0] + ".%s.srt" % subtitle.language, "w").\
+                    write(subtitle.text.encode("utf-8"))
