@@ -11,7 +11,6 @@ shows = {
     "South Park": {"tpb": True, "season": 18},
     "Modern Family": {"tpb": True, "season": 6},
     "Family Guy": {"tpb": True, "season": 13},
-    "The Newsroom": {"tpb": True, "season": 1},
     #"Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
     #                                "http://nnm-club.me/forum/download.php?id=723513": "",
     #                                # http://nnm-club.me/forum/viewtopic.php?t=839949
@@ -84,11 +83,14 @@ class DelugeClient(object):
 
 
 def _subliminal(args):
-    subtitles = download_best_subtitles([Video.fromname(args["old_name"])],
-                                        {babelfish.Language.fromietf("en")}).values()[0]
-    for subtitle in subtitles:
+    video = Video.fromname(args["old_name"])
+    languages = {babelfish.Language.fromietf("en")}
+    subtitles = []
+    for hearing_impaired in [True, False]:
+        subtitles += download_best_subtitles([video], languages, hearing_impaired=hearing_impaired).get(video, [])
+
+    for subtitle in sorted(subtitles, key=lambda s: s.compute_score(video), reverse=True):
         open(os.path.splitext(args["path"])[0] + ".%s.srt" % subtitle.language, "w").write(subtitle.text.encode("utf-8"))
-    if subtitles:
         return True
 
 
