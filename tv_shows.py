@@ -162,6 +162,9 @@ for show, config in shows.iteritems():
             continue
 
         for torrent in torrents:
+            if torrent.leechers < 1000:
+                continue
+
             s_e_match = re.search(r"S(?P<season>[0-9]+)E(?P<episode>[0-9]+)", torrent.title, flags=re.IGNORECASE)
             if s_e_match is None:
                 continue
