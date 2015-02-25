@@ -5,6 +5,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"
+RUTRACKER_COOKIES = b"bb_data=1-4188746-fb0X9LcVrp4GjPX7Uppl-633430560-1424466002-1424466002-2340970531-1"
 
 shows = {
     "The Big Bang Theory": {"tpb": True, "season": 8},
@@ -18,7 +19,10 @@ shows = {
     #                                # http://nnm-club.me/forum/viewtopic.php?t=839819
     #                                "http://nnm-club.me/forum/download.php?id=723387": ""},
     #                       "cookies": NNM_CLUB_COOKIES},
-    #           "season": 2}
+    #           "season": 2},
+    "Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4936016": "720p"},
+                                     "cookies": RUTRACKER_COOKIES},
+                         "season": 1}
 }
 
 import babelfish
@@ -210,10 +214,14 @@ for show, config in shows.iteritems():
         tracker = config["tracker"]
         season = config["season"]
         for url, quality in tracker["urls"].items():
+            cookies = {k: v.value for k, v in Cookie.SimpleCookie(tracker["cookies"]).items()}
             try:
-                r = requests.get(url,
-                                 cookies={k: v.value for k, v in Cookie.SimpleCookie(tracker["cookies"]).items()},
-                                 stream=True).raw.read()
+                if url.startswith("http://rutracker.org/"):
+                    r = requests.post(url.replace("http://", "http://dl.").replace("viewtopic.php", "dl.php"),
+                                      headers={"Referer": url}, cookies=cookies, stream=True)
+                else:
+                    r = requests.get(url, cookies=cookies, stream=True)
+                r = r.raw.read()
             except:
                 logging.getLogger("tracker").exception("Unable to download torrent")
                 continue
@@ -316,6 +324,9 @@ for downloaded in Retriever().retrieve(
          (operator.and_,
           (operator.eq, lambda k: k("logger"), torrent_downloader.logger),
           (operator.gt, lambda k: k("datetime"), datetime.now() - timedelta(days=14))))):
+    if not isinstance(downloaded.args["episode"], int):
+        continue
+
     for name, provider in subtitle_providers.items():
         subtitle_downloader = subtitle_downloaders[name]
         if not subtitle_downloader.contains(downloaded.msg):
