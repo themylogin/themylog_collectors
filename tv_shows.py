@@ -5,7 +5,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"
-RUTRACKER_COOKIES = b"bb_data=1-4188746-fb0X9LcVrp4GjPX7Uppl-633430560-1424466002-1424466002-2340970531-1"
+RUTRACKER_COOKIES = b"=".join(open(b"/media/storage/Torrent/.rutracker-cookies.txt").read().strip().split(b"\n")[-1].split(b"\t")[-2:])
 
 shows = {
     "The Big Bang Theory": {"tpb": True, "season": 8},
@@ -91,7 +91,7 @@ def _subliminal(args):
     languages = {babelfish.Language.fromietf("en")}
     subtitles = []
     for hearing_impaired in [True, False]:
-        subtitles += download_best_subtitles([video], languages, hearing_impaired=hearing_impaired).get(video, [])
+        subtitles += download_best_subtitles({video}, languages, hearing_impaired=hearing_impaired).get(video, [])
 
     for subtitle in sorted(subtitles, key=lambda s: s.compute_score(video), reverse=True):
         open(os.path.splitext(args["path"])[0] + ".%s.srt" % subtitle.language, "w").write(subtitle.text.encode("utf-8"))
