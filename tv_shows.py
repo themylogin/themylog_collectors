@@ -291,14 +291,17 @@ for show, config in shows.iteritems():
                 prefix = common_prefix(video_files)
                 suffix = common_suffix(video_files)
                 for video_file in video_files:
-                    if len(video_files) == 1:
-                        episode = 1
-                    else:
-                        episode = video_file.replace(prefix, "").replace(suffix, "")
-                        try:
-                            episode = int(episode)
-                        except ValueError:
-                            pass
+                    try:
+                        episode = Video.fromname(video_file).episode
+                    except:
+                        if len(video_files) == 1:
+                            episode = 1
+                        else:
+                            episode = video_file.replace(prefix, "").replace(suffix, "")
+                            try:
+                                episode = int(episode)
+                            except ValueError:
+                                pass
                     msg = "%s %s" % (make_torrent_title(show, season, quality, url), episode)
                     downloaded = Retriever().retrieve(
                         (operator.and_,
