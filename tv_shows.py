@@ -20,9 +20,9 @@ shows = {
     #                                "http://nnm-club.me/forum/download.php?id=723387": ""},
     #                       "cookies": NNM_CLUB_COOKIES},
     #           "season": 2},
-    "Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4936016": "720p"},
-                                     "cookies": RUTRACKER_COOKIES},
-                         "season": 1}
+    #"Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4936016": "720p"},
+    #                                 "cookies": RUTRACKER_COOKIES},
+    #                     "season": 1}
 }
 
 import babelfish
@@ -166,11 +166,15 @@ for show, config in shows.iteritems():
             continue
 
         for torrent in torrents:
+            logging.getLogger("tpb").debug("Found torrent %s", torrent.url)
+
             if torrent.leechers < 1000:
+                logging.getLogger("tpb").debug("Torrent has %d leechers, skipping", torrent.leechers)
                 continue
 
             s_e_match = re.search(r"S(?P<season>[0-9]+)E(?P<episode>[0-9]+)", torrent.title, flags=re.IGNORECASE)
             if s_e_match is None:
+                logging.getLogger("tpb").debug("Unable to parse torrent title '%s', skipping", torrent.title)
                 continue
 
             season = int(s_e_match.group("season"))
@@ -192,6 +196,7 @@ for show, config in shows.iteritems():
                        if qualities.index(test_quality) <= qualities.index(quality)):
                 try:
                     if not any(file.lower().endswith(video_extensions) for file in torrent.files.keys()):
+                        logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
                         continue
                 except lxml.etree.XMLSyntaxError:
                     logging.getLogger("tpb").exception("Unable to load files")
@@ -230,8 +235,8 @@ for show, config in shows.iteritems():
             found_torrents.append((base64.b64encode(r), location))
 
 for torrent, download_location in found_torrents:
-    if not os.path.exists(download_location):
-        os.mkdir(download_location)
+    if not os.path.exists(download_location.encode("utf-8")):
+        os.mkdir(download_location.encode("utf-8"))
 
     deluge.call("webapi.add_torrent", torrent, {"download_location": download_location})
 
