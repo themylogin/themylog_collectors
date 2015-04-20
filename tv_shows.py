@@ -42,7 +42,7 @@ import requests
 import re
 import shutil
 import string
-from subliminal import Video, download_best_subtitles
+from subliminal import Video, download_best_subtitles, cache_region
 import sys
 import tempfile
 from tpb import TPB
@@ -53,6 +53,7 @@ from themylog.collector.timeline import Timeline
 from themyutils.string import common_prefix, common_suffix
 
 setup_logging_handler("%s.collector" % sys.argv[1])
+cache_region.configure('dogpile.cache.memory')
 
 
 class DelugeClient(object):
