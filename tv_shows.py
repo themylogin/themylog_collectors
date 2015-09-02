@@ -23,6 +23,16 @@ shows = {
     #"Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4936016": "720p"},
     #                                 "cookies": RUTRACKER_COOKIES},
     #                     "season": 1}
+    #"Louie": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4983595": "720p"},
+    #                      "cookies": RUTRACKER_COOKIES},
+    #          "season": 5}
+    "Mr. Robot": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5015094": "720p"},
+                              "cookies": RUTRACKER_COOKIES},
+                  "season": 1},
+    "We Bare Bears": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=929744
+                                           "http://nnm-club.me/forum/download.php?id=790905": "720p"},
+                                  "cookies": NNM_CLUB_COOKIES},
+                      "season": 1},
 }
 
 import babelfish
