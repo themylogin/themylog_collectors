@@ -6,23 +6,20 @@ from __future__ import unicode_literals
 import datetime
 import dateutil.parser
 import json
-import os
-import urllib2
+import re
+import requests
 
 from themylog.collector.timeline import Timeline
 from themylog.collector.time_series import TimeSeries
 
 timeline = Timeline(logger="trips")
-opener = urllib2.build_opener()
-opener.addheaders.append(("Cookie", "ASP.NET_SessionId=%(session_id)s; tcard_ek_pan=%(card_number)s" % {
-    "session_id"    : "<ID сессии>",
-    "card_number"   : "<номер транспортной карты>",
-}))
-trips_history = json.loads(opener.open("https://t-karta.ru/ek/SitePages/TransportServicePage.aspx?functionName=GetCardTripsHistory&pan=%(pan)s&dateFrom=%(dateFrom)s&dateTo=%(dateTo)s" % {
+cookies = {"UserCity": "Novosibirsk",
+           "ASP.NET_SessionId": "<ID сессии>"}
+trips_history = json.loads(requests.post("https://t-karta.ru/Cabinet/TripHistory/", cookies=cookies, data={
     "pan"           : "<номер транспортной карты>",
     "dateFrom"      : (datetime.datetime.now() - datetime.timedelta(days=13)).strftime("%d.%m.%Y"),
     "dateTo"        : datetime.datetime.now().strftime("%d.%m.%Y"),
-}).read())["TripsHistory"]
+}).json())["TripsHistory"]
 if trips_history:
     for trip in trips_history:
         if timeline.contains(trip["Time"]):
@@ -36,9 +33,6 @@ if trips_history:
         }, datetime=dateutil.parser.parse(trip["Time"], dayfirst=True))
 
 time_series = TimeSeries()
-info = json.loads(opener.open("https://t-karta.ru/ek/SitePages/TransportServicePage.aspx?functionName=GetCardInfo&pan=%(pan)s&dateFrom=%(dateFrom)s&dateTo=%(dateTo)s" % {
-    "pan"           : "<номер транспортной карты>",
-    "dateFrom"      : (datetime.datetime.now() - datetime.timedelta(days=13)).strftime("%d.%m.%Y"),
-    "dateTo"        : datetime.datetime.now().strftime("%d.%m.%Y"),
-}).read())
+info = json.loads(re.search(r"var card = (\{.+\});",
+                            requests.get("https://t-karta.ru/Cabinet/Trip", cookies=cookies).text).group(1))
 time_series.balance(info["CardSum"] / 100, logger="balance")
