@@ -8,10 +8,10 @@ NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%
 RUTRACKER_COOKIES = b"=".join(open(b"/media/storage/Torrent/.rutracker-cookies.txt").read().strip().split(b"\n")[-1].split(b"\t")[-2:])
 
 shows = {
-    "The Big Bang Theory": {"tpb": True, "season": 8},
-    "South Park": {"tpb": True, "season": 18},
-    "Modern Family": {"tpb": True, "season": 6},
-    "Family Guy": {"tpb": True, "season": 13},
+    "The Big Bang Theory": {"tpb": True, "season": 9},
+    "South Park": {"tpb": True, "season": 19},
+    "Modern Family": {"tpb": True, "season": 7},
+    "Family Guy": {"tpb": True, "season": 14},
     #"Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
     #                                "http://nnm-club.me/forum/download.php?id=723513": "",
     #                                # http://nnm-club.me/forum/viewtopic.php?t=839949
@@ -26,13 +26,16 @@ shows = {
     #"Louie": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4983595": "720p"},
     #                      "cookies": RUTRACKER_COOKIES},
     #          "season": 5}
-    "Mr. Robot": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5015094": "720p"},
-                              "cookies": RUTRACKER_COOKIES},
-                  "season": 1},
+    #"Mr. Robot": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5015094": "720p"},
+    #                          "cookies": RUTRACKER_COOKIES},
+    #              "season": 1},
     "We Bare Bears": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=929744
                                            "http://nnm-club.me/forum/download.php?id=790905": "720p"},
                                   "cookies": NNM_CLUB_COOKIES},
                       "season": 1},
+    #"Narcos": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5074619": "1080p"},
+    #                       "cookies": RUTRACKER_COOKIES},
+    #           "season": 1},
 }
 
 import babelfish
@@ -179,8 +182,8 @@ for show, config in shows.iteritems():
         for torrent in torrents:
             logging.getLogger("tpb").debug("Found torrent %s", torrent.url)
 
-            if torrent.leechers < 1000:
-                logging.getLogger("tpb").debug("Torrent has %d leechers, skipping", torrent.leechers)
+            if torrent.seeders < 100:
+                logging.getLogger("tpb").debug("Torrent has %d seeders, skipping", torrent.seeders)
                 continue
 
             s_e_match = re.search(r"S(?P<season>[0-9]+)E(?P<episode>[0-9]+)", torrent.title, flags=re.IGNORECASE)
@@ -208,7 +211,6 @@ for show, config in shows.iteritems():
                 try:
                     if not any(file.lower().endswith(video_extensions) for file in torrent.files.keys()):
                         logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
-                        continue
                 except lxml.etree.XMLSyntaxError:
                     logging.getLogger("tpb").exception("Unable to load files")
                     continue
