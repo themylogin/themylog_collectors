@@ -11,6 +11,8 @@ from themylog.collector.time_series import TimeSeries
 
 time_series = TimeSeries()
 csrf_request = requests.get("https://lk.megafon.ru/login/")
+if "captcha-img" in csrf_request.text:
+    raise Exception("There is captcha")
 CSRF = re.search('CSRF_PARAM = "(.+)"', csrf_request.text).group(1)
 soup = BeautifulSoup(requests.post("https://lk.megafon.ru/login/dologin/",
                                    cookies=csrf_request.cookies,
