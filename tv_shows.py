@@ -2,6 +2,7 @@
 # crontab(minute="*/5")
 # title = "Скачивание телесериалов"
 # timeout = 180
+# transactional = False
 from __future__ import absolute_import, division, unicode_literals
 
 NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%3A622918%3Bi%3A1394994298%3Bi%3A622716%3Bi%3A1394995519%3Bi%3A767350%3Bi%3A1395497485%3Bi%3A774862%3Bi%3A1398173986%3Bi%3A779463%3Bi%3A1398173987%3B%7D; phpbb2mysql_4_data=a%3A2%3A%7Bs%3A11%3A%22autologinid%22%3Bs%3A32%3A%22db8fddf73a3eaa51ceeb8d286eec2d5f%22%3Bs%3A6%3A%22userid%22%3Bi%3A8717806%3B%7D"
@@ -36,6 +37,9 @@ shows = {
     #"Narcos": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5074619": "1080p"},
     #                       "cookies": RUTRACKER_COOKIES},
     #           "season": 1},
+    "Moonbeam City": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5082801": "720p"},
+                                  "cookies": RUTRACKER_COOKIES},
+                      "season": 1},
 }
 
 import babelfish
@@ -56,6 +60,7 @@ import re
 import shutil
 import string
 from subliminal import Video, download_best_subtitles, cache_region
+import subprocess
 import sys
 import tempfile
 from tpb import TPB
@@ -209,9 +214,18 @@ for show, config in shows.iteritems():
             if not any(torrent_file_seeker.contains(title_for_quality(test_quality)) for test_quality in qualities
                        if qualities.index(test_quality) <= qualities.index(quality)):
                 try:
-                    if not any(file.lower().endswith(video_extensions) for file in torrent.files.keys()):
-                        logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
-                except lxml.etree.XMLSyntaxError:
+                    d = tempfile.mkdtemp()
+                    subprocess.check_call(["timeout", "30", "aria2c", "--bt-metadata-only=true",
+                                           "--bt-save-metadata=true", "-d", d, torrent.magnet_link])
+                    with open(os.path.join(d. os.path.listdir(d)[0])) as f:
+                        for file in f.read().split("\n"):
+                            if re.match("[0-9 ]+\|.+", file):
+                                if file.lower().endswith(video_extensions):
+                                    break
+                        else:
+                            logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
+                            continue
+                except Exception:
                     logging.getLogger("tpb").exception("Unable to load files")
                     continue
 
