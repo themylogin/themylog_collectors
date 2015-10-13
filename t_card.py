@@ -16,7 +16,7 @@ timeline = Timeline(logger="trips")
 cookies = {"UserCity": "Novosibirsk",
            "ASP.NET_SessionId": "<ID сессии>"}
 proxies = {"https": "proxy"}
-trips_history = json.loads(requests.post("https://t-karta.ru/Cabinet/TripHistory/", cookies=cookies, proxies=proxies, data={
+trips_history = json.loads(requests.post("https://t-karta.ru/EK/Cabinet/TripHistory/", cookies=cookies, proxies=proxies, data={
     "pan"           : "<номер транспортной карты>",
     "dateFrom"      : (datetime.datetime.now() - datetime.timedelta(days=13)).strftime("%d.%m.%Y"),
     "dateTo"        : datetime.datetime.now().strftime("%d.%m.%Y"),
@@ -35,5 +35,5 @@ if trips_history:
 
 time_series = TimeSeries()
 info = json.loads(re.search(r"var card = (\{.+\});",
-                            requests.get("https://t-karta.ru/Cabinet/Trip", cookies=cookies, proxies=proxies).text).group(1))
+                            requests.get("https://t-karta.ru/EK/Cabinet/Trip", cookies=cookies, proxies=proxies).text).group(1))
 time_series.balance(info["CardSum"] / 100, logger="balance")
