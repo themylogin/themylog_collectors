@@ -14,7 +14,7 @@ csrf_request = requests.get("https://lk.megafon.ru/login/")
 if "captcha-img" in csrf_request.text:
     raise Exception("There is captcha")
 CSRF = re.search('CSRF_PARAM = "(.+)"', csrf_request.text).group(1)
-soup = BeautifulSoup(requests.post("https://lk.megafon.ru/login/dologin/",
+soup = BeautifulSoup(requests.post("https://lk.megafon.ru/dologin/",
                                    cookies=csrf_request.cookies,
                                    data={"CSRF": CSRF,
                                          "j_username": "<телефон>",

@@ -217,16 +217,16 @@ for show, config in shows.iteritems():
                     d = tempfile.mkdtemp()
                     subprocess.check_call(["timeout", "30", "aria2c", "--bt-metadata-only=true",
                                            "--bt-save-metadata=true", "-d", d, torrent.magnet_link])
-                    with open(os.path.join(d. os.path.listdir(d)[0])) as f:
-                        for file in f.read().split("\n"):
-                            if re.match("[0-9 ]+\|.+", file):
-                                if file.lower().endswith(video_extensions):
-                                    break
-                        else:
-                            logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
-                            continue
+                    output = subprocess.check_output(["aria2c", "-S", os.path.join(d, os.listdir(d)[0])])
+                    for file in output.split("\n"):
+                        if re.match("[0-9 ]+\|.+", file):
+                            if file.lower().endswith(video_extensions):
+                                break
+                    else:
+                        logging.getLogger("tpb").debug("Torrent has no video files: %r", torrent.files)
+                        continue
                 except Exception:
-                    logging.getLogger("tpb").exception("Unable to load files")
+                    logging.getLogger("tpb").warning("Unable to load files", exc_info=True)
                     continue
 
                 tmp_dst = os.path.join(tmp, "".join(random.choice(string.ascii_letters + string.digits)
