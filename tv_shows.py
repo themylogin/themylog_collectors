@@ -93,6 +93,8 @@ class DelugeClient(object):
         return self.do_call(method, *args)
 
     def do_call(self, method, *args):
+        logging.getLogger("deluge").debug("Calling %r%r", method, args)
+
         result = self.session.post("%s/json" % self.url,
                                    data=json.dumps({"id": 1,
                                                     "method": method,
@@ -102,6 +104,7 @@ class DelugeClient(object):
         if result["error"] is not None:
             raise Exception("Ошибка вызова %s: %s" % (method, result["error"]))
 
+        logging.getLogger("deluge").debug("Result: %r", result["result"])
         return result["result"]
 
 
@@ -176,6 +179,7 @@ def find_video_files(dst):
 
 
 found_torrents = []
+store_torrents = []
 for show, config in shows.iteritems():
     if config.get("tpb"):
         try:
@@ -233,14 +237,14 @@ for show, config in shows.iteritems():
                                                     for _ in range(32)))
                 found_torrents.append((torrent.magnet_link, tmp_dst))
 
-                torrent_file_seeker.store(title_for_quality(quality),
-                                          {"show": show,
-                                           "season": season,
-                                           "episode": episode,
-                                           "quality": quality,
-                                           "tmp_dst": tmp_dst,
-                                           "tpb": torrent.__dict__},
-                                          explanation="Начато скачивание %s" % title_for_quality(quality))
+                store_torrents.append((title_for_quality(quality),
+                                       {"show": show,
+                                        "season": season,
+                                        "episode": episode,
+                                        "quality": quality,
+                                        "tmp_dst": tmp_dst,
+                                        "tpb": torrent.__dict__},
+                                        "Начато скачивание %s" % title_for_quality(quality)))
 
     if config.get("tracker"):
         tracker = config["tracker"]
@@ -254,7 +258,7 @@ for show, config in shows.iteritems():
                 else:
                     r = requests.get(url, cookies=cookies, stream=True)
                 r = r.raw.read()
-            except:
+            except Exception:
                 logging.getLogger("tracker").exception("Unable to download torrent")
                 continue
 
@@ -266,6 +270,9 @@ for torrent, download_location in found_torrents:
         os.mkdir(download_location.encode("utf-8"))
 
     deluge.call("webapi.add_torrent", torrent, {"download_location": download_location})
+
+for key, args, explanation in store_torrents:
+    torrent_file_seeker.store(key, args, explanation=explanation)
 
 
 torrents = {torrent["save_path"]: torrent_id
