@@ -13,29 +13,28 @@ from themylog.collector.utils.storage import Storage
 
 storage = Storage()
 
-if storage.get("captcha", datetime.min) > datetime.now() - timedelta(hours=2):
+if storage.get("captcha", datetime.min) > datetime.now() - timedelta(hours=24):
+    storage["cookies"] = {}
     raise Exception("Waiting for captcha to disappear")
 
-try:
-    page = requests.get("https://lk.megafon.ru/", cookies=storage["cookies"]).text
-    if "private-office-header-balans" not in page.text:
-        raise Exception("Not authorized")
-except Exception:
+page = requests.get("https://lk.megafon.ru/", cookies=storage["cookies"]).text
+if "private-office-header-balans" not in page:
     csrf_request = requests.get("https://lk.megafon.ru/login/")
     if "captcha-img" in csrf_request.text:
         storage["captcha"] = datetime.now()
         raise Exception("There is captcha")
 
-    page = requests.post("https://lk.megafon.ru/dologin/",
-                         cookies=csrf_request.cookies,
-                         data={"CSRF": re.search('CSRF_PARAM = "(.+)"', csrf_request.text).group(1),
-                               "j_username": "<телефон>",
-                               "j_password": "<пароль от сервис-гида>"}).text
+    page_request = requests.post("https://lk.megafon.ru/dologin/",
+                                 cookies=csrf_request.cookies,
+                                 data={"CSRF": re.search('CSRF_PARAM = "(.+)"', csrf_request.text).group(1),
+                                       "j_username": "<телефон>",
+                                       "j_password": "<пароль от сервис-гида>"})
+    page = page_request.text
     if "captcha-img" in page:
         storage["captcha"] = datetime.now()
         raise Exception("There is captcha")
 
-    storage["cookies"] = {cookie.name: cookie.value for cookie in csrf_request.cookies}
+    storage["cookies"] = {cookie.name: cookie.value for cookie in page_request.cookies}
 
 time_series = TimeSeries()
 soup = BeautifulSoup(page)
