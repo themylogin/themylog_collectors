@@ -44,7 +44,6 @@ shows = {
 
 import babelfish
 import base64
-from bs4 import BeautifulSoup
 import Cookie
 from datetime import datetime, timedelta
 import functools
@@ -120,33 +119,10 @@ def _subliminal(args):
         return True
 
 
-def sp_fan(args):
-    if args["show"] == "South Park":
-        try:
-            content = requests.get("http://www.sp-fan.ru/episode/sub/download/%02d%02d.zip" % (args["season"],
-                                                                                               args["episode"]))
-            if content.status_code != 200:
-                raise Exception("status_code = %d" % content.status_code)
-
-            content = content.content
-        except:
-            return
-
-        fh, path = tempfile.mkstemp()
-        with open(path, "w") as f:
-            f.write(content)
-        z = zipfile.ZipFile(path)
-        for f in z.namelist():
-            if f.lower().endswith(".srt"):
-                open(os.path.splitext(args["path"])[0] + ".rus.srt", "w").write(z.read(f))
-        os.unlink(path)
-        return True
-
-
 tpb = TPB("http://thepiratebay.se")
 qualities = ("1080p", "720p", "")
 video_extensions = (".avi", ".mkv", ".mp4")
-subtitle_providers = {"subliminal": _subliminal, "sp_fan": sp_fan}
+subtitle_providers = {"subliminal": _subliminal}
 
 torrent_file_seeker = Timeline("torrent_file_seeker")
 torrent_downloader = Timeline("torrent_downloader")
