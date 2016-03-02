@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 from bs4 import BeautifulSoup
 from captcha2upload import CaptchaUpload
-from datetime import datetime, timedelta
 import logging
 import re
 import requests
