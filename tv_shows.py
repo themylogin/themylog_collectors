@@ -21,25 +21,26 @@ shows = {
     #                                "http://nnm-club.me/forum/download.php?id=723387": ""},
     #                       "cookies": NNM_CLUB_COOKIES},
     #           "season": 2},
-    #"Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4936016": "720p"},
-    #                                 "cookies": RUTRACKER_COOKIES},
-    #                     "season": 1}
+    "Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5172445": "1080p",
+                                              "http://rutracker.org/forum/viewtopic.php?t=5172975": "720p"},
+                                     "cookies": RUTRACKER_COOKIES},
+                         "season": 2},
     #"Louie": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4983595": "720p"},
     #                      "cookies": RUTRACKER_COOKIES},
     #          "season": 5}
     #"Mr. Robot": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5015094": "720p"},
     #                          "cookies": RUTRACKER_COOKIES},
     #              "season": 1},
-    "We Bare Bears": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=929744
-                                           "http://nnm-club.me/forum/download.php?id=790905": "720p"},
-                                  "cookies": NNM_CLUB_COOKIES},
-                      "season": 1},
+    #"We Bare Bears": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=929744
+    #                                       "http://nnm-club.me/forum/download.php?id=790905": "720p"},
+    #                              "cookies": NNM_CLUB_COOKIES},
+    #                  "season": 1},
     #"Narcos": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5074619": "1080p"},
     #                       "cookies": RUTRACKER_COOKIES},
     #           "season": 1},
-    "Moonbeam City": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5082801": "720p"},
-                                  "cookies": RUTRACKER_COOKIES},
-                      "season": 1},
+    #"Moonbeam City": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5082801": "720p"},
+    #                              "cookies": RUTRACKER_COOKIES},
+    #                  "season": 1},
 }
 
 import babelfish
@@ -55,6 +56,7 @@ import operator
 import os
 import random
 import requests
+import requesocks
 import re
 import shutil
 import string
@@ -63,14 +65,14 @@ import subprocess
 import sys
 import tempfile
 from tpb import TPB
-import zipfile
 
 from themylog.client import Retriever, setup_logging_handler
 from themylog.collector.timeline import Timeline
 from themyutils.string import common_prefix, common_suffix
 
+logging.getLogger("requesocks.packages.urllib3.connectionpool").setLevel(logging.ERROR)
 setup_logging_handler("%s.collector" % sys.argv[1])
-cache_region.configure('dogpile.cache.memory')
+cache_region.configure("dogpile.cache.memory")
 
 
 class DelugeClient(object):
@@ -229,11 +231,13 @@ for show, config in shows.iteritems():
             cookies = {k: v.value for k, v in Cookie.SimpleCookie(tracker["cookies"]).items()}
             try:
                 if url.startswith("http://rutracker.org/"):
-                    r = requests.post(url.replace("http://", "http://dl.").replace("viewtopic.php", "dl.php"),
-                                      headers={"Referer": url}, cookies=cookies, stream=True)
+                    session = requesocks.session()
+                    session.proxies = {'http': 'socks5://127.0.0.1:9050',
+                                       'https': 'socks5://127.0.0.1:9050'}
+                    r = session.post(url.replace("http://", "http://dl.").replace("viewtopic.php", "dl.php"),
+                                     headers={"Referer": url}, cookies=cookies).content
                 else:
-                    r = requests.get(url, cookies=cookies, stream=True)
-                r = r.raw.read()
+                    r = requests.get(url, cookies=cookies).content
             except Exception:
                 logging.getLogger("tracker").exception("Unable to download torrent")
                 continue

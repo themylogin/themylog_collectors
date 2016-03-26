@@ -11,6 +11,8 @@ import requests
 import sys
 import tempfile
 
+from themyutils.requests import chrome
+
 from themylog.client import setup_logging_handler
 from themylog.collector.time_series import TimeSeries
 from themylog.collector.utils.storage import Storage
@@ -19,7 +21,11 @@ setup_logging_handler("%s.collector" % sys.argv[1])
 
 storage = Storage()
 
-response = requests.get("https://lk.megafon.ru/", cookies=storage.get("cookies", None))
+headers = {"User-Agent": chrome}
+
+response = requests.get("https://lk.megafon.ru/",
+                        headers=headers,
+                        cookies=storage.get("cookie", None))
 if "Сервис временно недоступен" in response.text:
     raise Exception("Сервис временно недоступен")
 if "/login/" in response.url:
@@ -32,6 +38,7 @@ if "/login/" in response.url:
     captcha = soup.find("img", "captcha-img")
     if captcha:
         captcha_request = requests.get("https://lk.megafon.ru" + captcha["src"],
+                                       headers=headers,
                                        cookies=csrf_request.cookies)
         with tempfile.NamedTemporaryFile(suffix=".png") as f:
             f.write(captcha_request.content)
@@ -41,6 +48,7 @@ if "/login/" in response.url:
             auth_data["captcha"] = captcha.solve(f.name)
 
     page_request = requests.post("https://lk.megafon.ru/dologin/",
+                                 headers=headers,
                                  cookies=csrf_request.cookies,
                                  data=auth_data)
     page = page_request.text
@@ -54,6 +62,6 @@ else:
 time_series = TimeSeries()
 soup = BeautifulSoup(page)
 time_series.balance({
-    "balance":  float(re.sub(r"[^0-9\.]", "", soup(text=re.compile("Баланс"))[0].next.get_text().replace(",", "."))),
+    "balance":  float(re.sub(r"[^\-0-9\.]", "", soup(text=re.compile("Баланс"))[0].next.get_text().replace(",", ".").replace("−", "-"))),
     "bonus":    float(re.sub(r"[^0-9\.]", "", soup.find("div", "private-office-width").get_text().replace(",", "."))),
 })
