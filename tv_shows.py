@@ -13,14 +13,10 @@ shows = {
     "South Park": {"tpb": True, "season": 19},
     "Modern Family": {"tpb": True, "season": 7},
     "Family Guy": {"tpb": True, "season": 14},
-    #"Физрук": {"tracker": {"urls": {# http://nnm-club.me/forum/viewtopic.php?t=839965
-    #                                "http://nnm-club.me/forum/download.php?id=723513": "",
-    #                                # http://nnm-club.me/forum/viewtopic.php?t=839949
-    #                                "http://nnm-club.me/forum/download.php?id=723484": "720p",
-    #                                # http://nnm-club.me/forum/viewtopic.php?t=839819
-    #                                "http://nnm-club.me/forum/download.php?id=723387": ""},
-    #                       "cookies": NNM_CLUB_COOKIES},
-    #           "season": 2},
+    "Физрук": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5202341": "",
+                                    "http://rutracker.org/forum/viewtopic.php?t=5203331": ""},
+                           "cookies": RUTRACKER_COOKIES},
+               "season": 3},
     "Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5172445": "1080p",
                                               "http://rutracker.org/forum/viewtopic.php?t=5172975": "720p"},
                                      "cookies": RUTRACKER_COOKIES},
@@ -163,7 +159,7 @@ for show, config in shows.iteritems():
         try:
             torrents = list(tpb.search(show, order=99))
         except lxml.etree.XMLSyntaxError:
-            logging.getLogger("tpb").exception("Unable to open thepiratebay")
+            logging.getLogger("tpb").warning("Unable to open thepiratebay", exc_info=True)
             continue
 
         for torrent in torrents:
@@ -239,7 +235,7 @@ for show, config in shows.iteritems():
                 else:
                     r = requests.get(url, cookies=cookies).content
             except Exception:
-                logging.getLogger("tracker").exception("Unable to download torrent")
+                logging.getLogger("tracker").warning("Unable to download torrent", exc_info=True)
                 continue
 
             location = make_torrent_location(show, season, quality, url)
@@ -349,13 +345,17 @@ for downloaded in Retriever().retrieve(
     if not isinstance(downloaded.args["episode"], int):
         continue
 
+    if downloaded.args["show"].encode("ascii", "ignore") != downloaded.args["show"]:
+        logging.getLogger("subtitle_downloader").debug("Show %s is not ASCII, skipping", downloaded.args["show"])
+        continue
+
     for name, provider in subtitle_providers.items():
         subtitle_downloader = subtitle_downloaders[name]
         if not subtitle_downloader.contains(downloaded.msg):
             try:
                 data = provider(downloaded.args)
             except:
-                logging.getLogger("subtitle_provider.%s" % name).exception("Unable to download subtitles")
+                logging.getLogger("subtitle_provider.%s" % name).warning("Unable to download subtitles", exc_info=True)
                 continue
 
             if data:
