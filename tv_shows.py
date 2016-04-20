@@ -251,9 +251,9 @@ for key, args, explanation in store_torrents:
     torrent_file_seeker.store(key, args, explanation=explanation)
 
 
+torrents_dict = deluge.call("webapi.get_torrents", None, ["progress", "save_path", "time_added"])["torrents"]
 torrents = {torrent["save_path"]: torrent_id
-            for torrent_id, torrent in deluge.call("webapi.get_torrents", None,
-                                                   ["save_path", "progress"])["torrents"].iteritems()
+            for torrent_id, torrent in torrents_dict.iteritems()
             if torrent["progress"] == 100}
 for downloading in Retriever().retrieve(
         (operator.and_,
@@ -333,6 +333,12 @@ for show, config in shows.iteritems():
                                                   "old_name": video_file,
                                                   "path": video_file},
                                                  explanation="Завершено скачивание %s" % msg)
+
+                for torrent_id in sorted([torrent_id
+                                          for torrent_id, torrent in torrents_dict.iteritems()
+                                          if torrent["save_path"] == location],
+                                         key=lambda torrent_id: torrents_dict[torrent_id]["time_added"])[:-1]:
+                    deluge.call("webapi.remove_torrent", torrent_id)
 
 
 subtitle_downloaders = {name: Timeline("%s_subtitle_provider" % name) for name in subtitle_providers}
