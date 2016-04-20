@@ -44,7 +44,7 @@ if "/login/" in response.url:
             f.write(captcha_request.content)
             f.flush()
 
-            captcha = CaptchaUpload("<2captcha.com key>", logging.getLogger("captcha"), 30)
+            captcha = CaptchaUpload("<2captcha.com key>", logging.getLogger("captcha"), 120)
             auth_data["captcha"] = captcha.solve(f.name)
 
     page_request = requests.post("https://lk.megafon.ru/dologin/",
