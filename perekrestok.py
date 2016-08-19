@@ -30,7 +30,7 @@ while True:
 
             timeline.store(transaction["id"], transaction, datetime=datetime.fromtimestamp(transaction["date"]))
 
-        offset += 1
+        offset += len(transactions)
         time.sleep(5)
     else:
         sys.exit(0)

@@ -9,18 +9,14 @@ NNM_CLUB_COOKIES = b"phpbb2mysql_4_t=a%3A6%3A%7Bi%3A623486%3Bi%3A1394994292%3Bi%
 RUTRACKER_COOKIES = b"=".join(open(b"/media/storage/Torrent/.rutracker-cookies.txt").read().strip().split(b"\n")[-1].split(b"\t")[-2:])
 
 shows = {
-    "The Big Bang Theory": {"tpb": True, "season": 9},
-    "South Park": {"tpb": True, "season": 19},
-    "Modern Family": {"tpb": True, "season": 7},
-    "Family Guy": {"tpb": True, "season": 14},
-    "Физрук": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5202341": "",
-                                    "http://rutracker.org/forum/viewtopic.php?t=5203331": ""},
-                           "cookies": RUTRACKER_COOKIES},
-               "season": 3},
-    "Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5172445": "1080p",
-                                              "http://rutracker.org/forum/viewtopic.php?t=5172975": "720p"},
-                                     "cookies": RUTRACKER_COOKIES},
-                         "season": 2},
+    #"The Big Bang Theory": {"tpb": True, "season": 9},
+    #"South Park": {"tpb": True, "season": 19},
+    #"Modern Family": {"tpb": True, "season": 7},
+    #"Family Guy": {"tpb": True, "season": 14},
+    #"Better Call Saul": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=5172445": "1080p",
+    #                                          "http://rutracker.org/forum/viewtopic.php?t=5172975": "720p"},
+    #                                 "cookies": RUTRACKER_COOKIES},
+    #                     "season": 2},
     #"Louie": {"tracker": {"urls": {"http://rutracker.org/forum/viewtopic.php?t=4983595": "720p"},
     #                      "cookies": RUTRACKER_COOKIES},
     #          "season": 5}

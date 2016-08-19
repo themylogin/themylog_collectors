@@ -34,7 +34,11 @@ if "/login/" in response.url:
                       "j_username": "<телефон>",
                       "j_password": "<пароль от сервис-гида>"}
 
-    soup = BeautifulSoup(csrf_request.text)
+    page_request = requests.post("https://lk.megafon.ru/dologin/",
+                                 headers=headers,
+                                 cookies=csrf_request.cookies,
+                                 data=auth_data)
+    soup = BeautifulSoup(page_request.text)
     captcha = soup.find("img", "captcha-img")
     if captcha:
         captcha_request = requests.get("https://lk.megafon.ru" + captcha["src"],
@@ -43,17 +47,21 @@ if "/login/" in response.url:
         with tempfile.NamedTemporaryFile(suffix=".png") as f:
             f.write(captcha_request.content)
             f.flush()
+            print(f.name)
 
             captcha = CaptchaUpload("<2captcha.com key>", logging.getLogger("captcha"), 120)
             auth_data["captcha"] = captcha.solve(f.name)
+            print(auth_data["captcha"])
 
-    page_request = requests.post("https://lk.megafon.ru/dologin/",
-                                 headers=headers,
-                                 cookies=csrf_request.cookies,
-                                 data=auth_data)
-    page = page_request.text
-    if "captcha-img" in page:
-        raise Exception("Captcha was solved incorrectly")
+        page_request = requests.post("https://lk.megafon.ru/dologin/",
+                                     headers=headers,
+                                     cookies=csrf_request.cookies,
+                                     data=auth_data)
+        page = page_request.text
+        if "captcha-img" in page:
+            raise Exception("Captcha was solved incorrectly")
+    else:
+        page = page_request.text
 
     storage["cookies"] = {cookie.name: cookie.value for cookie in page_request.cookies}
 else:
