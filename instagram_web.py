@@ -79,6 +79,3 @@ while True:
         cursor = int(media["id"])
 
         timeline.store(media["id"], media, datetime=datetime.utcfromtimestamp(media["date"]))
-
-        requests.get("http://thelogin.ru/data/internet/%s" % media["display_src"].replace("://", "/")).raise_for_status()
-        requests.get("http://thelogin.ru/data/internet/%s" % media["thumbnail_src"].replace("://", "/")).raise_for_status()

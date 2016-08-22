@@ -8,8 +8,6 @@ import instagram
 import sys
 import urlparse
 
-from themyutils.datetime import utc_to_local
-
 from themylog.collector.timeline import Timeline
 
 instagram_api = instagram.InstagramAPI(access_token=b"<access token>",
@@ -24,7 +22,7 @@ while True:
         if timeline.contains(media["id"]):
             sys.exit(0)
 
-        timeline.store(media["id"], media, datetime=utc_to_local(datetime.utcfromtimestamp(float(media["created_time"]))))
+        timeline.store(media["id"], media, datetime=datetime.utcfromtimestamp(float(media["created_time"])))
 
     if next_:
         max_id = urlparse.parse_qs(urlparse.urlparse(next_).query)["max_id"][0]
